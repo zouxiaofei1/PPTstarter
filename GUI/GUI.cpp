@@ -1,49 +1,57 @@
-ï»¿#include "stdafx.h"//å¤´æ–‡ä»¶
-#include "GUI.h"
-#include "WndShadow.h"
-#include "Actions.h"
-#include "TestFunctions.h"
-BOOL				InitInstance(HINSTANCE, int);//éƒ¨åˆ†(é‡è¦)å‡½æ•°çš„å‰å‘å£°æ˜
-LRESULT	CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);//ä¸»çª—å£
+#include "stdafx.h"//Í·ÎÄ¼ş
+#include <map>
+BOOL				InitInstance(HINSTANCE, int);//²¿·Ö(ÖØÒª)º¯ÊıµÄÇ°ÏòÉùÃ÷
+LRESULT	CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);//Ö÷´°¿Ú
 
-//è‡ªå·±å®šä¹‰çš„ æœ‰ç‚¹ä¹±
+//×Ô¼º¶¨ÒåµÄ ÓĞµãÂÒ
 
-HINSTANCE hInst;// å½“å‰å®ä¾‹å¤‡ä»½å˜é‡ï¼ŒCreateWindow&LoadIconæ—¶éœ€è¦
-const wchar_t szWindowClass[] = L"PPTstarter";//ä¸»çª—å£ç±»å
+HINSTANCE hInst;// µ±Ç°ÊµÀı±¸·İ±äÁ¿£¬CreateWindow&LoadIconÊ±ĞèÒª
+const wchar_t szWindowClass[] = L"PPTstarter";//Ö÷´°¿ÚÀàÃû
 
-HBRUSH DBlueBrush, LBlueBrush, WhiteBrush,red;//ç¬”åˆ·
-HPEN BLACK,r;//ç¬”
+HBRUSH DBlueBrush, LBlueBrush, WhiteBrush, red;//±ÊË¢
+HPEN BLACK, r;//±Ê
 HDC rdc;
-class CathyClass//æ§ä»¶ä¸»ç±»
+
+unsigned int Hash(const wchar_t *str)
+{
+	unsigned int seed = 131;
+	unsigned int hash = 0;
+
+	while (*str)
+	{
+		hash = hash * seed + (*str++);
+	}
+
+	return (hash & 0x7FFFFFFF);
+}
+
+class CathyClass//¿Ø¼şÖ÷Àà
 {
 public:
-	void InitClass(HINSTANCE HInstance)//æ–°Classä½¿ç”¨ä¹‹å‰æœ€å¥½Initä¸€ä¸‹
-	{								//  ï¼ˆä¸Initä¹Ÿè¡Œï¼‰
+	void InitClass(HINSTANCE HInstance)//ĞÂClassÊ¹ÓÃÖ®Ç°×îºÃInitÒ»ÏÂ
+	{								//  £¨²»InitÒ²ĞĞ£©
 		hInstance = HInstance;
 		CurCover = -1;
 
-		//é»˜è®¤å®‹ä½“
-		DefFont = CreateFontW(48, 24, 0, 0, FW_EXTRABOLD, FALSE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("å®‹ä½“"));
+		//Ä¬ÈÏËÎÌå
+		DefFont = CreateFontW(48, 24, 0, 0, FW_EXTRABOLD, FALSE, FALSE, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, _T("ËÎÌå"));
 	}
 
 	ATOM RegisterClass(HINSTANCE h, WNDPROC proc, LPCWSTR ClassName)
-	{//æ³¨å†ŒClass
+	{//×¢²áClass
 		WNDCLASSEXW wcex = { 0 };
 		wcex.cbSize = sizeof(WNDCLASSEX);
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
 		wcex.lpfnWndProc = proc;
 		wcex.hInstance = h;
-		wcex.hIcon = LoadIcon(h, MAKEINTRESOURCE(IDI_GUI));//å¤§å›¾æ ‡
 		wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 		wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-		wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_GUI);
-		wcex.lpszClassName = ClassName;//è‡ªå®šä¹‰ClassNameå’ŒWndProc
-		wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_GUI));//å°å›¾æ ‡
+		wcex.lpszClassName = ClassName;//×Ô¶¨ÒåClassNameºÍWndProc
 		return RegisterClassExW(&wcex);
 	}
 
 	void CreateButtonEx(int Number, int Left, int Top, int Wid, int Hei, int Page, LPCWSTR name, HBRUSH Leave, \
-		HBRUSH Hover, HBRUSH press, HPEN Leave2, HPEN Hover2, HPEN Press2, HFONT Font, COLORREF FontRGB, LPCWSTR ID)//åˆ›å»ºæŒ‰é’®
+		HBRUSH Hover, HBRUSH press, HPEN Leave2, HPEN Hover2, HPEN Press2, HFONT Font, COLORREF FontRGB, LPCWSTR ID)//´´½¨°´Å¥
 	{
 		Button[Number].Left = Left; Button[Number].Top = Top;
 		Button[Number].Width = Wid; Button[Number].Height = Hei;
@@ -56,18 +64,18 @@ public:
 		wcscpy_s(Button[Number].ID, ID);
 		but[Hash(ID)] = Number;
 	}
-	void CreateButton(int Left, int Top, int Wid, int Hei, int Page, LPCWSTR name, LPCWSTR ID)//åˆ›å»ºæŒ‰é’®ï¼ˆç®€åŒ–ç‰ˆï¼‰
+	void CreateButton(int Left, int Top, int Wid, int Hei, int Page, LPCWSTR name, LPCWSTR ID)//´´½¨°´Å¥£¨¼ò»¯°æ£©
 	{
 		++CurButton;
 		CreateButtonEx(CurButton, Left, Top, Wid, Hei, Page, name, WhiteBrush, DBlueBrush, LBlueBrush, BLACK, BLACK, BLACK, 0, RGB(0, 0, 0), ID);
 	}
 
-	inline BOOL InsideButton(int cur, POINT &point)//åˆ¤æ–­é¼ æ ‡æŒ‡é’ˆæ˜¯å¦åœ¨æŒ‰é’®å†…
+	inline BOOL InsideButton(int cur, POINT &point)//ÅĞ¶ÏÊó±êÖ¸ÕëÊÇ·ñÔÚ°´Å¥ÄÚ
 	{
 		return (Button[cur].Left <= point.x && Button[cur].Top <= point.y && (Button[cur].Left + Button[cur].Width) >= point.x && (Button[cur].Top + Button[cur].Height) >= point.y);
 	}
 
-	void DrawButtons()//ç»˜åˆ¶æŒ‰é’®
+	void DrawButtons()//»æÖÆ°´Å¥
 	{
 		int i;
 		for (i = 1; i <= CurButton; ++i)
@@ -76,27 +84,27 @@ public:
 			{
 				SetTextColor(hdc, Button[i].FontRGB);
 
-				if (CurCover == i)//æ²¡æœ‰ç¦ç”¨&æ¸å˜è‰² -> é»˜è®¤é¢œè‰²
+				if (CurCover == i)//Ã»ÓĞ½ûÓÃ&½¥±äÉ« -> Ä¬ÈÏÑÕÉ«
 					if (Press == 1) {
-						SelectObject(hdc, Button[i].Press);//æŒ‰ä¸‹æŒ‰é’®
+						SelectObject(hdc, Button[i].Press);//°´ÏÂ°´Å¥
 						SelectObject(hdc, Button[i].Press2);
 					}
 					else {
-						SelectObject(hdc, Button[i].Hover);//æ‚¬æµ®
+						SelectObject(hdc, Button[i].Hover);//Ğü¸¡
 						SelectObject(hdc, Button[i].Hover2);
 					}
 				else
 				{
-					SelectObject(hdc, Button[i].Leave);//ç¦»å¼€
+					SelectObject(hdc, Button[i].Leave);//Àë¿ª
 					SelectObject(hdc, Button[i].Leave2);
 				}
-				if (Button[i].Font == NULL)SelectObject(hdc, DefFont); else SelectObject(hdc, Button[i].Font);//å­—ä½“
+				if (Button[i].Font == NULL)SelectObject(hdc, DefFont); else SelectObject(hdc, Button[i].Font);//×ÖÌå
 
-				Rectangle(hdc, Button[i].Left, Button[i].Top, Button[i].Left + Button[i].Width, Button[i].Top + Button[i].Height);//ç»˜åˆ¶æ–¹æ¡†
+				Rectangle(hdc, Button[i].Left, Button[i].Top, Button[i].Left + Button[i].Width, Button[i].Top + Button[i].Height);//»æÖÆ·½¿ò
 
 				RECT rc = GetRECT(i);
 
-				SetBkMode(hdc, TRANSPARENT);//å»æ‰æ–‡å­—èƒŒæ™¯
+				SetBkMode(hdc, TRANSPARENT);//È¥µôÎÄ×Ö±³¾°
 				DrawTextW(hdc, Button[i].Name, (int)wcslen(Button[i].Name), &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 			}
@@ -104,17 +112,17 @@ public:
 		//SetTextColor(hdc, RGB(0, 0, 0));
 	}
 
-	RECT GetRECT(int cur)//æ›´æ–°Buttonsçš„rc
+	RECT GetRECT(int cur)//¸üĞÂButtonsµÄrc
 	{
 		RECT rc = { Button[cur].Left, Button[cur].Top,Button[cur].Left + Button[cur].Width,Button[cur].Top + Button[cur].Height };
 		return rc;
 	}
-	void LeftButtonDown()//é¼ æ ‡å·¦é”®æŒ‰ä¸‹
+	void LeftButtonDown()//Êó±ê×ó¼ü°´ÏÂ
 	{
 		POINT point;
 		GetCursorPos(&point);
-		ScreenToClient(hWnd, &point);//æƒ¯ä¾‹ è·å–åæ ‡
-		if (CurCover != -1)//å½“æŒ‰é’®æŒ‰ä¸‹ & åœç•™åœ¨æŒ‰é’®ä¸Šæ—¶
+		ScreenToClient(hWnd, &point);//¹ßÀı »ñÈ¡×ø±ê
+		if (CurCover != -1)//µ±°´Å¥°´ÏÂ & Í£ÁôÔÚ°´Å¥ÉÏÊ±
 		{
 			Press = 1;
 			RECT rc = GetRECT(CurCover);
@@ -122,46 +130,46 @@ public:
 		}
 
 	}
-	void ButtonGetNewInside(POINT &point)//æ£€æŸ¥pointæ˜¯å¦åœ¨checkå†…
+	void ButtonGetNewInside(POINT &point)//¼ì²épointÊÇ·ñÔÚcheckÄÚ
 	{
-		for (int i = 0; i <= CurButton; ++i)//å†å²åŸå› ï¼ŒButtonç¼–å·æ˜¯ä»0å¼€å§‹çš„
+		for (int i = 0; i <= CurButton; ++i)//ÀúÊ·Ô­Òò£¬Button±àºÅÊÇ´Ó0¿ªÊ¼µÄ
 			if (Button[i].Page == CurWnd || Button[i].Page == 0)
-				if (InsideButton(i, point))//åœ¨æŒ‰é’®ä¸­
+				if (InsideButton(i, point))//ÔÚ°´Å¥ÖĞ
 				{
-					CurCover = i;//è®¾ç½®curcover
-					RECT rc = GetRECT(i);//é‡ç»˜
+					CurCover = i;//ÉèÖÃcurcover
+					RECT rc = GetRECT(i);//ÖØ»æ
 					Redraw(&rc);
 					return;
 				}
 	}
 
-	void MouseMove()//é¼ æ ‡ç§»åŠ¨
+	void MouseMove()//Êó±êÒÆ¶¯
 	{
 		POINT point;
 		GetCursorPos(&point);
 		ScreenToClient(hWnd, &point);
-		if (CurCover == -1)ButtonGetNewInside(point);//åŸæ¥ä¸åœ¨æŒ‰é’®å†… -> çœ‹çœ‹ç°åœ¨æ˜¯å¦ç§»è¿›æŒ‰é’®
-		else//åŸæ¥åœ¨
+		if (CurCover == -1)ButtonGetNewInside(point);//Ô­À´²»ÔÚ°´Å¥ÄÚ -> ¿´¿´ÏÖÔÚÊÇ·ñÒÆ½ø°´Å¥
+		else//Ô­À´ÔÚ
 		{
 			if ((Button[CurCover].Page != CurWnd && Button[CurCover].Page != 0) || !InsideButton(CurCover, point))
 			{
 				RECT rc = GetRECT(CurCover);
 				CurCover = -1;
 				Redraw(&rc);
-				ButtonGetNewInside(point);//æœ‰å¯èƒ½ä»ä¸€ä¸ªæŒ‰é’®ç›´æ¥ç§»è¿›å¦ä¸€ä¸ªæŒ‰é’®å†…
+				ButtonGetNewInside(point);//ÓĞ¿ÉÄÜ´ÓÒ»¸ö°´Å¥Ö±½ÓÒÆ½øÁíÒ»¸ö°´Å¥ÄÚ
 			}
 		}
 
 		if (Msv == 0)
-		{//æ£€æµ‹é¼ æ ‡ç§»è¿›ç§»å‡ºçš„ä»£ç 
+		{//¼ì²âÊó±êÒÆ½øÒÆ³öµÄ´úÂë
 			TRACKMOUSEEVENT tme;
 			tme.cbSize = sizeof(tme);
 			tme.hwndTrack = hWnd;
 			tme.dwFlags = TME_LEAVE;
 			TrackMouseEvent(&tme);
-			Msv = 1;//ç§»å‡º
+			Msv = 1;//ÒÆ³ö
 		}
-		else Msv = 0;//ç§»è¿›
+		else Msv = 0;//ÒÆ½ø
 	}
 
 	LPWSTR GetCurInsideID()
@@ -184,7 +192,7 @@ public:
 
 	void Redraw(const RECT *rc) { InvalidateRect(hWnd, rc, FALSE); UpdateWindow(hWnd); }
 
-	struct ButtonEx//æŒ‰é’®
+	struct ButtonEx//°´Å¥
 	{
 		long Left, Top, Width, Height, Page;
 		HBRUSH Leave, Hover, Press;
@@ -197,27 +205,27 @@ public:
 
 	std::map<unsigned int, int>but;
 	HFONT DefFont;
-	int Msv;//é¼ æ ‡ç§»å‡ºæ£€æµ‹å˜é‡
+	int Msv;//Êó±êÒÆ³ö¼ì²â±äÁ¿
 	int CurButton;
 	int CurCover;
 	int CurWnd;
 	int Press;
-	HDC hdc;//ç¼“å­˜dc
-	HDC tdc;//çœŸå®dc
+	HDC hdc;//»º´ædc
+	HDC tdc;//ÕæÊµdc
 	int Width, Height;
 	HWND hWnd;
 	HINSTANCE hInstance;
 private:
 }Main;
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,//å…¥å£ç‚¹
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,//Èë¿Úµã
 	_In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
 
 	if (!InitInstance(hInstance, nCmdShow))return FALSE;
-	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GUI));
+	HACCEL hAccelTable = LoadAccelerators(hInstance, 0);
 
 	MSG msg;
-	// ä¸»æ¶ˆæ¯å¾ªç¯: 
+	// Ö÷ÏûÏ¢Ñ­»·: 
 	while (GetMessageW(&msg, nullptr, 0, 0))
 	{
 		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
@@ -230,7 +238,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 }
 DWORD pid = 0;
 bool show = false;
-void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)//ä¸»è®¡æ—¶å™¨
+void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)//Ö÷¼ÆÊ±Æ÷
 {
 	bool f = false;
 	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -239,10 +247,10 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)//ä¸»è
 	if (!Process32First(hSnapShot, &pe))return;
 	while (Process32Next(hSnapShot, &pe))
 	{
-		if ((pe.szExeFile[0]=='p'|| pe.szExeFile[0]=='P')&&\
-			(pe.szExeFile[1] == 'o' || pe.szExeFile[1] == 'O')&&\
+		if ((pe.szExeFile[0] == 'p' || pe.szExeFile[0] == 'P') && \
+			(pe.szExeFile[1] == 'o' || pe.szExeFile[1] == 'O') && \
 			(pe.szExeFile[2] == 'w' || pe.szExeFile[2] == 'W')
-		)
+			)
 		{
 			if (show)return;
 			show = f = true;
@@ -265,20 +273,20 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	DBlueBrush = CreateSolidBrush(RGB(0xFF, 0xF9, 0xB8));
 	LBlueBrush = CreateSolidBrush(RGB(0xFF, 0xFB, 0xDB));
 	WhiteBrush = CreateSolidBrush(RGB(0xFF, 0xFC, 0xEA));
-	red = CreateSolidBrush(RGB(0xFF,0xC1,0x25));
+	red = CreateSolidBrush(RGB(0xFF, 0xC1, 0x25));
 	r = CreatePen(PS_SOLID, 1, RGB(0xFF, 0x45, 0x00));
 	BLACK = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 
-	hInst = hInstance; // å°†å®ä¾‹å¥æŸ„å­˜å‚¨åœ¨å…¨å±€å˜é‡ä¸­
+	hInst = hInstance; // ½«ÊµÀı¾ä±ú´æ´¢ÔÚÈ«¾Ö±äÁ¿ÖĞ
 	Main.InitClass(hInst);
 	if (!Main.RegisterClassW(hInst, WndProc, szWindowClass))return FALSE;
 
-	Main.hWnd = CreateWindowW(szWindowClass, L"å¼€å§‹", NULL, CW_USEDEFAULT, CW_USEDEFAULT, 250, 170, NULL, nullptr, hInstance, nullptr);
-	SetWindowLong(Main.hWnd, GWL_STYLE, GetWindowLong(Main.hWnd, GWL_STYLE)& ~WS_CAPTION & ~WS_THICKFRAME&~WS_SYSMENU&~WS_GROUP&~WS_TABSTOP);//æ— è¾¹æ¡†çª—å£
+	Main.hWnd = CreateWindowW(szWindowClass, L"¿ªÊ¼", NULL, CW_USEDEFAULT, CW_USEDEFAULT, 250, 170, NULL, nullptr, hInstance, nullptr);
+	SetWindowLong(Main.hWnd, GWL_STYLE, GetWindowLong(Main.hWnd, GWL_STYLE)& ~WS_CAPTION & ~WS_THICKFRAME&~WS_SYSMENU&~WS_GROUP&~WS_TABSTOP);//ÎŞ±ß¿ò´°¿Ú
 	SetTimer(Main.hWnd, 1, 100, (TIMERPROC)TimerProc);
 	if (!Main.hWnd)return FALSE;
 
-	Main.CreateButton(0, 20, 250, 150, 0, L"å¼€å§‹æ”¾æ˜ ", L"hookS");
+	Main.CreateButton(0, 20, 250, 150, 0, L"¿ªÊ¼·ÅÓ³", L"h");
 
 	return TRUE;
 }
@@ -287,11 +295,11 @@ BOOL CALLBACK EnumTDwnd(HWND hwnd, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
 	ULONG nProcessID;
-	LONG A;//éå†æ‰€æœ‰çª—å£
+	LONG A;//±éÀúËùÓĞ´°¿Ú
 	A = GetWindowLongW(hwnd, GWL_STYLE) & WS_VISIBLE;
 	if (A != 0 && GetParent(hwnd) == NULL)
 	{
-		::GetWindowThreadProcessId(hwnd, &nProcessID);//å¦‚æœpidæ­£ç¡®ï¼ŒæŠŠhwndè®°å½•ä¸‹æ¥
+		::GetWindowThreadProcessId(hwnd, &nProcessID);//Èç¹ûpidÕıÈ·£¬°Ñhwnd¼ÇÂ¼ÏÂÀ´
 		if (pid == nProcessID)
 		{
 			SetWindowPos(Main.hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
@@ -307,15 +315,15 @@ BOOL CALLBACK EnumTDwnd(HWND hwnd, LPARAM lParam)
 	return 1;
 }
 
-//å“åº”å‡½æ•°
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)//ä¸»çª—å£å“åº”å‡½æ•°
+//ÏìÓ¦º¯Êı
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)//Ö÷´°¿ÚÏìÓ¦º¯Êı
 {
 	switch (message)
 	{
-	case WM_CLOSE://å…³é—­
+	case WM_CLOSE://¹Ø±Õ
 		PostQuitMessage(0);
 		break;
-	case WM_PAINT://ç»˜å›¾
+	case WM_PAINT://»æÍ¼
 	{
 		PAINTSTRUCT ps;
 		rdc = BeginPaint(hWnd, &ps);
@@ -352,10 +360,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		ScreenToClient(Main.hWnd, &point);
 		unsigned int x;
 		x = Hash(Main.GetCurInsideID());
-		BUTTON_IN(x, L"hookS")
+		if (x == Hash(L"h"))
 		{
 			EnumWindows(EnumTDwnd, NULL);
-			//ShowWindow(T, SW_HIDE);
 			break;
 		}
 		break;
